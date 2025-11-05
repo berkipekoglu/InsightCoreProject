@@ -1,0 +1,31 @@
+$ npx create-next-app . --example https://github.com/shuding/nextra-docs-template --use-npm --legacy-peer-deps
+Creating a new Next.js app in D:\Projects\InsightCore Project\docs.
+
+Downloading files from repo https://github.com/shuding/nextra-docs-template. This might take a moment.
+
+Installing packages. This might take a couple of minutes.
+
+npm error code ERESOLVE
+npm error ERESOLVE unable to resolve dependency tree
+npm error
+npm error While resolving: nextra-docs-template@0.0.1
+npm error Found: next@13.5.11
+npm error node_modules/next
+npm error   next@"^13.0.6" from the root project
+npm error
+npm error Could not resolve dependency:
+npm error peer next@">=14" from nextra@4.6.0
+npm error node_modules/nextra
+npm error   nextra@"latest" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error C:\Users\berki\AppData\Local\npm-cache\_logs\2025-11-05T20_55_51_714Z-eresolve-report.txt
+npm error A complete log of this run can be found in: C:\Users\berki\AppData\Local\npm-cache\_logs\2025-11-05T20_55_51_714Z-debug-0.log
+
+Aborting installation.
+  npm install has failed.
