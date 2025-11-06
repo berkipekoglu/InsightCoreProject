@@ -26,6 +26,7 @@ You must adhere to the following rules for the duration of this project:
     - **API Specs:** When delivering API phases (Phase 3, 5, 6), you _must_ include the corresponding OpenAPI (Swagger) specifications.
     - **Architecture:** When delivering complex flows (e.g., Phase 4 Worker), you _must_ provide a `Mermaid.js` diagram explaining the data flow.
     - **Guides:** When a Phase is complete (e.g., Phase 1), you _must_ generate the "Quick Start" or "How-to" guide (in Markdown, for our Nextra site) that explains how to use/run it.
+8.  **Incorporate Context7 MCP Server:** The project stack includes a core component identified as the "Context7 MCP Server". You must ensure that relevant architectural decisions and coding phases (where context management, configuration, or real-time data handling is needed) properly integrate with and utilize the Context7 server as intended in the user's design.
 
 ---
 
