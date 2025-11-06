@@ -1,31 +1,90 @@
-$ npx create-next-app . --example https://github.com/shuding/nextra-docs-template --use-npm --legacy-peer-deps
-Creating a new Next.js app in D:\Projects\InsightCore Project\docs.
+$ docker-compose up --build -d
+time="2025-11-06T19:38:44+03:00" level=warning msg="D:\\Projects\\InsightCore Project\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[+] Building 5.4s (35/41)
+ => [internal] load local bake definitions                                                                                                                            0.0s 
+ => => reading from stdin 2.65kB                                                                                                                                      0.0s
+ => [processor-worker internal] load build definition from Dockerfile                                                                                                 0.0s
+ => => transferring dockerfile: 440B                                                                                                                                  0.0s 
+ => [collector-api internal] load build definition from Dockerfile                                                                                                    0.0s 
+ => => transferring dockerfile: 361B                                                                                                                                  0.0s 
+ => [dashboard-frontend internal] load build definition from Dockerfile                                                                                               0.0s 
+ => => transferring dockerfile: 173B                                                                                                                                  0.0s 
+ => [dashboard-api internal] load build definition from Dockerfile                                                                                                    0.0s 
+ => => transferring dockerfile: 156B                                                                                                                                  0.0s 
+ => [docs internal] load build definition from Dockerfile                                                                                                             0.1s 
+ => => transferring dockerfile: 155B                                                                                                                                  0.0s 
+ => [docs internal] load metadata for docker.io/library/node:20-alpine                                                                                                0.6s 
+ => [dashboard-api internal] load .dockerignore                                                                                                                       0.0s
+ => => transferring context: 2B                                                                                                                                       0.0s 
+ => [docs internal] load .dockerignore                                                                                                                                0.1s 
+ => => transferring context: 2B                                                                                                                                       0.0s 
+ => [dashboard-frontend internal] load .dockerignore                                                                                                                  0.0s 
+ => => transferring context: 2B                                                                                                                                       0.0s 
+ => [processor-worker internal] load .dockerignore                                                                                                                    0.0s 
+ => => transferring context: 2B                                                                                                                                       0.0s 
+ => [collector-api internal] load .dockerignore                                                                                                                       0.1s 
+ => => transferring context: 2B                                                                                                                                       0.0s 
+ => [collector-api 1/6] FROM docker.io/library/node:20-alpine@sha256:6178e78b972f79c335df281f4b7674a2d85071aae2af020ffa39f0a770265435                                 0.0s 
+ => => resolve docker.io/library/node:20-alpine@sha256:6178e78b972f79c335df281f4b7674a2d85071aae2af020ffa39f0a770265435                                               0.0s 
+ => [processor-worker internal] load build context                                                                                                                    0.1s 
+ => => transferring context: 213.90kB                                                                                                                                 0.1s 
+ => [dashboard-frontend internal] load build context                                                                                                                  0.8s 
+ => => transferring context: 1.68MB                                                                                                                                   0.8s 
+ => CANCELED [dashboard-api internal] load build context                                                                                                              4.1s 
+ => => transferring context: 11.39MB                                                                                                                                  4.1s
+ => CANCELED [docs internal] load build context                                                                                                                       4.1s 
+ => => transferring context: 95.56MB                                                                                                                                  4.1s 
+ => [collector-api internal] load build context                                                                                                                       0.1s 
+ => => transferring context: 176.65kB                                                                                                                                 0.1s 
+ => CACHED [collector-api 2/9] RUN apk add --no-cache netcat-openbsd                                                                                                  0.0s 
+ => CACHED [collector-api 3/9] WORKDIR /app                                                                                                                           0.0s 
+ => CACHED [collector-api 4/9] COPY package*.json ./                                                                                                                  0.0s 
+ => CACHED [collector-api 5/9] RUN npm install                                                                                                                        0.0s 
+ => CACHED [collector-api 6/9] COPY . .                                                                                                                               0.0s 
+ => CACHED [collector-api 7/9] COPY wait-for-it.sh .                                                                                                                  0.0s 
+ => CACHED [collector-api 8/9] RUN chmod +x ./wait-for-it.sh                                                                                                          0.0s 
+ => ERROR [collector-api 9/9] RUN npm run build                                                                                                                       3.9s 
+ => CACHED [dashboard-frontend 2/6] WORKDIR /app                                                                                                                      0.0s 
+ => CACHED [processor-worker 3/6] COPY package*.json ./                                                                                                               0.0s 
+ => CACHED [processor-worker 4/6] RUN npm install                                                                                                                     0.0s 
+ => [processor-worker 5/6] COPY . .                                                                                                                                   1.0s 
+ => CACHED [dashboard-frontend 3/5] COPY package.json package-lock.json ./                                                                                            0.0s 
+ => CACHED [dashboard-frontend 4/5] RUN npm install                                                                                                                   0.0s 
+ => CANCELED [dashboard-frontend 5/5] COPY . .                                                                                                                        3.5s 
+ => [processor-worker 6/6] RUN npm run build                                                                                                                          2.8s 
+ => CANCELED [processor-worker] exporting to image                                                                                                                    0.1s 
+ => => exporting layers                                                                                                                                               0.1s 
+------
+ > [collector-api 9/9] RUN npm run build:
+0.568
+0.568 > collector-api@1.0.0 build
+0.568 > tsc
+0.568
+3.636 src/index.ts(20,56): error TS2769: No overload matches this call.
+3.636   Overload 1 of 3, '(obj: "Failed to connect to RabbitMQ", msg?: undefined): void', gave the following error.
+3.636     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+3.636   Overload 2 of 3, '(obj: "Failed to connect to RabbitMQ", msg?: undefined, ...args: unknown[]): void', gave the following error.
+3.636     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+3.637 src/index.ts(48,48): error TS2769: No overload matches this call.
+3.637   Overload 1 of 3, '(obj: "Failed to queue event", msg?: undefined): void', gave the following error.
+3.637     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+3.637   Overload 2 of 3, '(obj: "Failed to queue event", msg?: undefined, ...args: unknown[]): void', gave the following error.
+3.637     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+------
+Dockerfile:17
 
-Downloading files from repo https://github.com/shuding/nextra-docs-template. This might take a moment.
+--------------------
 
-Installing packages. This might take a couple of minutes.
+  15 |     RUN chmod +x ./wait-for-it.sh
 
-npm error code ERESOLVE
-npm error ERESOLVE unable to resolve dependency tree
-npm error
-npm error While resolving: nextra-docs-template@0.0.1
-npm error Found: next@13.5.11
-npm error node_modules/next
-npm error   next@"^13.0.6" from the root project
-npm error
-npm error Could not resolve dependency:
-npm error peer next@">=14" from nextra@4.6.0
-npm error node_modules/nextra
-npm error   nextra@"latest" from the root project
-npm error
-npm error Fix the upstream dependency conflict, or retry
-npm error this command with --force or --legacy-peer-deps
-npm error to accept an incorrect (and potentially broken) dependency resolution.
-npm error
-npm error
-npm error For a full report see:
-npm error C:\Users\berki\AppData\Local\npm-cache\_logs\2025-11-05T20_55_51_714Z-eresolve-report.txt
-npm error A complete log of this run can be found in: C:\Users\berki\AppData\Local\npm-cache\_logs\2025-11-05T20_55_51_714Z-debug-0.log
+  16 |
 
-Aborting installation.
-  npm install has failed.
+  17 | >>> RUN npm run build
+
+  18 |
+
+  19 |     EXPOSE 3000
+
+--------------------
+
+target collector-api: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2

@@ -17,7 +17,7 @@ async function connectRabbitMQ() {
     await channel.assertQueue(EVENTS_QUEUE, { durable: true }); // durable:true makes the queue survive broker restarts
     fastify.log.info(`Connected to RabbitMQ and asserted queue: ${EVENTS_QUEUE}`)
   } catch (error) {
-    fastify.log.error('Failed to connect to RabbitMQ', error);
+    fastify.log.error(error, 'Failed to connect to RabbitMQ');
     // Keep retrying connection
     setTimeout(connectRabbitMQ, 5000);
   }
@@ -45,7 +45,7 @@ fastify.post('/collect', async (request: FastifyRequest<{ Body: Buffer }>, reply
     reply.code(204).send();
 
   } catch (error) {
-    fastify.log.error('Failed to queue event', error);
+    fastify.log.error(error, 'Failed to queue event');
     // If we can't queue, the service is effectively down. Return 500.
     reply.code(500).send({ status: 'error', message: 'Failed to queue event' });
   }

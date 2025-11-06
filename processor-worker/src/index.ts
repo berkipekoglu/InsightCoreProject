@@ -137,7 +137,7 @@ async function processBatch(channel: amqp.Channel) {
             const objectName = `${data.projectId}/${sessionId}/${Date.now()}.json.gz`;
             const buffer = Buffer.from(JSON.stringify(data.events));
             const compressedBuffer = await gzipAsync(buffer);
-            await minioClient.putObject(MINIO_BUCKET, objectName, compressedBuffer, {
+            await minioClient.putObject(MINIO_BUCKET, objectName, compressedBuffer, compressedBuffer.length, {
                 'Content-Type': 'application/json',
                 'Content-Encoding': 'gzip',
             });

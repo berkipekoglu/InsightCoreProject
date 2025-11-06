@@ -105,6 +105,24 @@ services:
       - clickhouse
       - minio
 
+  dashboard-api:
+    build: ./dashboard-api
+    container_name: insightcore_dashboard_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://insightcore_user:insightcore_password@postgres:5432/insightcore_db
+      JWT_SECRET: "YOUR_SUPER_SECRET_JWT_SECRET_CHANGE_ME"
+    volumes:
+      - ./dashboard-api:/app
+      - /app/node_modules
+    command: sh -c "npm run dev"
+    networks:
+      - insightcore-network
+    depends_on:
+      - postgres
+
   dashboard-frontend:
     build: ./dashboard-frontend
     container_name: insightcore_dashboard_frontend

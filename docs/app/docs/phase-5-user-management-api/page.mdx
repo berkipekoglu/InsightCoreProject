@@ -1,0 +1,91 @@
+# Phase 5: User Management API - Overview
+
+This document outlines the architecture and functionality of the `dashboard-api` service, which handles user authentication, registration, and project management for InsightCore.
+
+## Mission of the Dashboard API
+
+The `dashboard-api` serves as the backend for the InsightCore dashboard. Its primary responsibilities include:
+
+-   **User Authentication:** Securely managing user registration and login processes.
+-   **User Authorization:** Issuing JSON Web Tokens (JWTs) to authenticate subsequent requests.
+-   **Project Management:** Allowing authenticated users to create and manage their projects.
+-   **Multi-Tenancy:** Ensuring all operations are scoped to the user's organization.
+
+## Technology Stack
+
+The `dashboard-api` is built using:
+
+-   **Node.js:** A high-performance JavaScript runtime.
+-   **Fastify:** A highly optimized web framework for Node.js.
+-   **TypeScript:** For type safety and improved maintainability.
+-   **PostgreSQL:** The primary database for storing user, organization, and project data.
+-   **`bcrypt`:** For secure password hashing.
+-   **`jsonwebtoken`:** For generating and verifying JWTs.
+-   **`nanoid`:** For generating unique, URL-friendly project IDs.
+
+## API Endpoints
+
+### 1. `POST /register` - User Registration
+
+Allows new users to create an account. Upon successful registration, a new organization is also created for the user.
+
+-   **Request Body:**
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "securepassword123"
+    }
+    ```
+-   **Process:**
+    1.  Creates a new `organization` record.
+    2.  Hashes the provided `password` using `bcrypt`.
+    3.  Creates a new `user` record, associating it with the new organization.
+-   **Response:** `201 Created` with `userId` and `organizationId`.
+
+### 2. `POST /login` - User Login
+
+Authenticates an existing user and issues a JWT.
+
+-   **Request Body:**
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "securepassword123"
+    }
+    ```
+-   **Process:**
+    1.  Retrieves user by `email` from PostgreSQL.
+    2.  Compares the provided `password` with the stored `password_hash` using `bcrypt.compare`.
+    3.  If credentials are valid, generates a JWT containing `userId` and `organizationId`.
+-   **Response:** `200 OK` with the generated JWT.
+    ```json
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+    ```
+
+### 3. `POST /projects` - Project Creation
+
+Allows an authenticated user to create a new project within their organization.
+
+-   **Authentication:** Requires a valid JWT in the `Authorization: Bearer <token>` header.
+-   **Request Body:**
+    ```json
+    {
+      "name": "My New Website Project"
+    }
+    ```
+-   **Process:**
+    1.  Authenticates the request using the provided JWT.
+    2.  Extracts `organizationId` from the JWT.
+    3.  Generates a unique `project_id` (e.g., `prj_abcdef123456`).
+    4.  Inserts a new `project` record into PostgreSQL, associated with the user's organization.
+-   **Response:** `201 Created` with the details of the newly created project, including its `project_id`.
+
+## Security Considerations
+
+-   **Password Hashing:** Passwords are never stored in plain text. `bcrypt` is used to hash passwords before storage.
+-   **JWT Secret:** The `JWT_SECRET` is loaded from environment variables and should be a strong, randomly generated string in production environments.
+-   **Authentication Middleware:** A `preHandler` hook ensures that protected routes (`/projects`) can only be accessed with a valid JWT, enforcing multi-tenancy by scoping operations to the `organizationId` embedded in the token.
+
+This concludes the architectural overview of the Phase 5 User Management API. It provides the foundational services for user interaction and project setup within the InsightCore platform.
