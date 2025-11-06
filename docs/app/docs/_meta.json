@@ -2,5 +2,6 @@
   "index": "Introduction",
   "phase-1-infrastructure": "Phase 1: Infrastructure & Database Schemas",
   "phase-2-sdk": "Phase 2: Client-Side SDK",
-  "phase-3-ingestion-pipeline": "Phase 3: Ingestion Pipeline"
+  "phase-3-ingestion-pipeline": "Phase 3: Ingestion Pipeline",
+  "phase-4-processor-worker": "Phase 4: Processor Worker"
 }
