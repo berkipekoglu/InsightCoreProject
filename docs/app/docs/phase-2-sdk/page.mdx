@@ -1,0 +1,47 @@
+# Phase 2: Client-Side SDK - Quick Start Guide
+
+This guide explains how to integrate the InsightCore Client-Side SDK into your website to begin collecting session data.
+
+## Overview
+
+The InsightCore SDK is a small JavaScript snippet that you add to your website. Once installed, it captures:
+
+- **Session Replays:** Records user interactions and DOM changes using `rrweb`.
+- **Heatmap Data:** Collects throttled mouse movements and clicks.
+- **Web Vitals:** Captures Core Web Vitals like LCP, FID, and CLS.
+- **JavaScript Errors:** Reports any uncaught errors that occur in the browser console.
+
+All data is batched and sent efficiently to the InsightCore collector API.
+
+## Integration
+
+To install the SDK, you need to add the following `<script>` tag to the `<head>` section of your HTML file. 
+
+This script will be served from your InsightCore instance in a production environment. For local development, you will need to serve the `sdk/dist/index.js` file.
+
+```html filename="Your Website's HTML"
+<script 
+  async 
+  src="http://localhost:3000/sdk.js" 
+  data-project-id="YOUR_PROJECT_ID" 
+  data-collector-url="http://localhost:8000/collect">
+</script>
+```
+
+### Configuration Attributes
+
+The SDK is configured using `data-*` attributes on the script tag:
+
+- `src`: The URL where the SDK script is hosted. In our local setup, the `collector-api` will eventually be configured to serve this file.
+- `data-project-id`: **Required.** This is the unique ID for your project in InsightCore. The SDK will not initialize without it.
+- `data-collector-url`: **Required.** This is the full URL to the `/collect` endpoint of the InsightCore Collector API.
+
+## How It Works
+
+1.  **Initialization:** The script automatically initializes on page load.
+2.  **Session ID:** It creates a unique `session_id` and stores it in `sessionStorage` to track the user's journey within a single session.
+3.  **Data Collection:** It starts recording events (`rrweb`, web vitals, errors) immediately.
+4.  **Batching:** Events are collected into a buffer and sent to the collector API every 10 seconds.
+5.  **Data Persistence:** To prevent data loss when a user navigates away, the SDK uses the `navigator.sendBeacon` API to send any remaining data just before the page unloads.
+
+This concludes the Quick Start Guide for the Phase 2 SDK. Once integrated, your website will begin sending valuable analytics and session data to your InsightCore instance.

@@ -1,0 +1,58 @@
+# Phase 3: Ingestion Pipeline (API & Queue) - Overview
+
+This guide provides an overview of the InsightCore Ingestion Pipeline, focusing on the `collector-api` service and its role in efficiently receiving and queuing data.
+
+## Mission of the `collector-api`
+
+The `collector-api` is a high-performance, single-purpose service designed to be the entry point for all incoming telemetry data from the Client-Side SDK. Its primary mission is to:
+
+1.  **Receive Data:** Accept incoming data payloads from the SDK.
+2.  **Queue Instantly:** Immediately forward these payloads to a RabbitMQ queue for asynchronous processing.
+3.  **Respond Quickly:** Return a `204 No Content` response to the client as fast as possible, without making the client wait for any processing.
+
+Crucially, the `collector-api` **does not** perform any data processing, validation, or direct database writes. Its sole focus is on high-throughput ingestion.
+
+## Technology Stack
+
+The `collector-api` is built using:
+
+-   **Node.js:** A high-performance JavaScript runtime.
+-   **Fastify:** A highly optimized web framework for Node.js, chosen for its speed and low overhead.
+-   **TypeScript:** For type safety and improved maintainability.
+
+## Key Features and Implementation Details
+
+### 1. Raw Buffer Body Handling
+
+To maximize ingestion performance and minimize CPU cycles, the `collector-api` is configured to receive incoming `application/json` request bodies as a raw `Buffer` rather than parsing them into a JavaScript object. This avoids the overhead of JSON parsing at the ingestion layer.
+
+```typescript
+fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+  done(null, body);
+});
+```
+
+### 2. RabbitMQ Integration
+
+Upon receiving a payload, the `collector-api` publishes the raw `Buffer` directly to a dedicated RabbitMQ queue named `events_queue`. This ensures that data is durably stored in the queue and can be processed by downstream worker services without blocking the ingestion API.
+
+-   **Queue Name:** `events_queue`
+-   **Persistence:** Messages are sent with `persistent: true` to ensure they survive RabbitMQ broker restarts.
+
+```typescript
+channel.sendToQueue(EVENTS_QUEUE, request.body, { persistent: true });
+```
+
+### 3. Immediate `204 No Content` Response
+
+After successfully queuing the event, the API immediately sends a `204 No Content` HTTP response. This signals to the client that the request was received and processed successfully, without needing to return any data in the response body. This is critical for client-side performance and preventing data loss, especially when using `navigator.sendBeacon`.
+
+```typescript
+reply.code(204).send();
+```
+
+## Architecture Flow
+
+Client-Side SDK -> `collector-api` (Fastify) -> RabbitMQ (`events_queue`) -> Processor Worker (Phase 4)
+
+This design ensures a highly scalable and resilient ingestion pipeline, decoupling the act of receiving data from its subsequent processing.

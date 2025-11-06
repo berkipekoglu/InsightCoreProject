@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest } from 'fastify';
 import amqp from 'amqplib';
 
 const fastify = Fastify({
@@ -6,7 +6,7 @@ const fastify = Fastify({
 });
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://insightcore_user:insightcore_password@rabbitmq';
-const COLLECT_QUEUE = 'collect_events';
+const EVENTS_QUEUE = 'events_queue'; // As per Phase 3 spec
 
 let channel: amqp.Channel;
 
@@ -14,23 +14,40 @@ async function connectRabbitMQ() {
   try {
     const connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
-    await channel.assertQueue(COLLECT_QUEUE, { durable: true });
-    fastify.log.info('Connected to RabbitMQ');
+    await channel.assertQueue(EVENTS_QUEUE, { durable: true }); // durable:true makes the queue survive broker restarts
+    fastify.log.info(`Connected to RabbitMQ and asserted queue: ${EVENTS_QUEUE}`)
   } catch (error) {
-    fastify.log.error(error);
-    process.exit(1);
+    fastify.log.error('Failed to connect to RabbitMQ', error);
+    // Keep retrying connection
+    setTimeout(connectRabbitMQ, 5000);
   }
 }
 
-// Declare a route
-fastify.post('/collect', async (request, reply) => {
+/**
+ * Configure Fastify to not parse application/json, but instead pass the raw buffer.
+ * This is a performance optimization to avoid the overhead of JSON parsing.
+ */
+fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+  done(null, body);
+});
+
+/**
+ * The /collect endpoint.
+ * Its only job is to receive the raw request body and publish it to RabbitMQ.
+ * It returns a 204 No Content response immediately.
+ */
+fastify.post('/collect', async (request: FastifyRequest<{ Body: Buffer }>, reply) => {
   try {
-    const message = JSON.stringify(request.body);
-    channel.sendToQueue(COLLECT_QUEUE, Buffer.from(message), { persistent: true });
-    return { status: 'ok', message: 'Event queued' };
+    // The body is already a Buffer thanks to the content type parser
+    channel.sendToQueue(EVENTS_QUEUE, request.body, { persistent: true });
+    
+    // Immediately reply with 204 No Content and end the request.
+    reply.code(204).send();
+
   } catch (error) {
-    fastify.log.error(error);
-    reply.status(500).send({ status: 'error', message: 'Failed to queue event' });
+    fastify.log.error('Failed to queue event', error);
+    // If we can't queue, the service is effectively down. Return 500.
+    reply.code(500).send({ status: 'error', message: 'Failed to queue event' });
   }
 });
 
