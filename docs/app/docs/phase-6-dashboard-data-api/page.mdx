@@ -1,0 +1,78 @@
+# Phase 6: Dashboard Data API - Overview
+
+This document details the secure, multi-tenant API endpoints added to the `dashboard-api` service to provide session and analytics data to the InsightCore frontend.
+
+## Security & Multi-Tenancy
+
+All data endpoints are secured using a two-tiered approach:
+
+1.  **Authentication (`authenticate` hook):** Requires a valid JSON Web Token (JWT) in the `Authorization: Bearer <token>` header for all requests. This confirms the user is logged in.
+
+2.  **Authorization (`authorizeProject` hook):** After authentication, this hook verifies that the `project_id` specified in the URL belongs to the user's organization. It performs a lookup in the PostgreSQL `projects` table to match the `project_id` with the `organization_id` from the user's JWT. This is a critical step that prevents one organization from accessing another organization's data.
+
+## Data API Endpoints
+
+### 1. `GET /projects/:projectId/sessions`
+
+Retrieves a list of all recorded sessions for a specific project.
+
+-   **Purpose:** To populate a dashboard view where users can see all recent sessions.
+-   **Data Source:** Queries the `session_events` table in **ClickHouse**.
+-   **Response:** An array of session objects, ordered by `start_time` descending.
+    ```json
+    [
+      {
+        "session_id": "1731078968892-gq1y2f9j",
+        "start_time": "2025-11-06 19:16:08",
+        "duration": null, // To be implemented
+        "device_type": "desktop",
+        "browser": "Chrome",
+        "os": "Windows",
+        "has_errors": 1,
+        "has_rage_clicks": 0
+      },
+      // ... more sessions
+    ]
+    ```
+
+### 2. `GET /projects/:projectId/sessions/:sessionId/replay`
+
+Fetches the compressed `rrweb` event data for a single session, allowing for playback.
+
+-   **Purpose:** To provide the raw event data needed by the `rrweb-player` on the frontend.
+-   **Data Source:** Lists and retrieves all corresponding session chunk files from **MinIO**.
+-   **Process:**
+    1.  Lists all objects in the MinIO bucket with the prefix `[projectId]/[sessionId]/`.
+    2.  Downloads each object (which is a `.json.gz` file).
+    3.  Decompresses the Gzip data.
+    4.  Parses the JSON and concatenates the events from all chunks into a single array.
+    5.  Sorts the final array by timestamp to ensure correct playback order.
+-   **Response:** A JSON array of `rrweb` events.
+
+### 3. `GET /projects/:projectId/heatmap`
+
+Provides aggregated heatmap data for a specific URL within a project.
+
+-   **Purpose:** To generate a heatmap visualization over a screenshot of the page.
+-   **Query Parameters:**
+    -   `url` (required): The exact URL of the page for which to retrieve heatmap data.
+-   **Data Source:** Queries the `heatmap_events` table in **ClickHouse**.
+-   **Process:** It groups all `mousemove` and `click` events by their `x` and `y` coordinates and returns a count for each coordinate pair.
+-   **Response:** An array of objects, where each object represents a point on the heatmap with its intensity. This format is compatible with libraries like `heatmap.js`.
+    ```json
+    [
+      {
+        "x": 150,
+        "y": 230,
+        "value": 45
+      },
+      {
+        "x": 152,
+        "y": 231,
+        "value": 60
+      },
+      // ... more coordinates
+    ]
+    ```
+
+This concludes the overview of the Phase 6 Dashboard Data API. These endpoints provide the necessary data for building a rich, interactive user interface for session replay and analytics.

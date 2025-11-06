@@ -1,90 +1,65 @@
-$ docker-compose up --build -d
-time="2025-11-06T19:38:44+03:00" level=warning msg="D:\\Projects\\InsightCore Project\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-[+] Building 5.4s (35/41)
- => [internal] load local bake definitions                                                                                                                            0.0s 
- => => reading from stdin 2.65kB                                                                                                                                      0.0s
- => [processor-worker internal] load build definition from Dockerfile                                                                                                 0.0s
- => => transferring dockerfile: 440B                                                                                                                                  0.0s 
- => [collector-api internal] load build definition from Dockerfile                                                                                                    0.0s 
- => => transferring dockerfile: 361B                                                                                                                                  0.0s 
- => [dashboard-frontend internal] load build definition from Dockerfile                                                                                               0.0s 
- => => transferring dockerfile: 173B                                                                                                                                  0.0s 
- => [dashboard-api internal] load build definition from Dockerfile                                                                                                    0.0s 
- => => transferring dockerfile: 156B                                                                                                                                  0.0s 
- => [docs internal] load build definition from Dockerfile                                                                                                             0.1s 
- => => transferring dockerfile: 155B                                                                                                                                  0.0s 
- => [docs internal] load metadata for docker.io/library/node:20-alpine                                                                                                0.6s 
- => [dashboard-api internal] load .dockerignore                                                                                                                       0.0s
- => => transferring context: 2B                                                                                                                                       0.0s 
- => [docs internal] load .dockerignore                                                                                                                                0.1s 
- => => transferring context: 2B                                                                                                                                       0.0s 
- => [dashboard-frontend internal] load .dockerignore                                                                                                                  0.0s 
- => => transferring context: 2B                                                                                                                                       0.0s 
- => [processor-worker internal] load .dockerignore                                                                                                                    0.0s 
- => => transferring context: 2B                                                                                                                                       0.0s 
- => [collector-api internal] load .dockerignore                                                                                                                       0.1s 
- => => transferring context: 2B                                                                                                                                       0.0s 
- => [collector-api 1/6] FROM docker.io/library/node:20-alpine@sha256:6178e78b972f79c335df281f4b7674a2d85071aae2af020ffa39f0a770265435                                 0.0s 
- => => resolve docker.io/library/node:20-alpine@sha256:6178e78b972f79c335df281f4b7674a2d85071aae2af020ffa39f0a770265435                                               0.0s 
- => [processor-worker internal] load build context                                                                                                                    0.1s 
- => => transferring context: 213.90kB                                                                                                                                 0.1s 
- => [dashboard-frontend internal] load build context                                                                                                                  0.8s 
- => => transferring context: 1.68MB                                                                                                                                   0.8s 
- => CANCELED [dashboard-api internal] load build context                                                                                                              4.1s 
- => => transferring context: 11.39MB                                                                                                                                  4.1s
- => CANCELED [docs internal] load build context                                                                                                                       4.1s 
- => => transferring context: 95.56MB                                                                                                                                  4.1s 
- => [collector-api internal] load build context                                                                                                                       0.1s 
- => => transferring context: 176.65kB                                                                                                                                 0.1s 
- => CACHED [collector-api 2/9] RUN apk add --no-cache netcat-openbsd                                                                                                  0.0s 
- => CACHED [collector-api 3/9] WORKDIR /app                                                                                                                           0.0s 
- => CACHED [collector-api 4/9] COPY package*.json ./                                                                                                                  0.0s 
- => CACHED [collector-api 5/9] RUN npm install                                                                                                                        0.0s 
- => CACHED [collector-api 6/9] COPY . .                                                                                                                               0.0s 
- => CACHED [collector-api 7/9] COPY wait-for-it.sh .                                                                                                                  0.0s 
- => CACHED [collector-api 8/9] RUN chmod +x ./wait-for-it.sh                                                                                                          0.0s 
- => ERROR [collector-api 9/9] RUN npm run build                                                                                                                       3.9s 
- => CACHED [dashboard-frontend 2/6] WORKDIR /app                                                                                                                      0.0s 
- => CACHED [processor-worker 3/6] COPY package*.json ./                                                                                                               0.0s 
- => CACHED [processor-worker 4/6] RUN npm install                                                                                                                     0.0s 
- => [processor-worker 5/6] COPY . .                                                                                                                                   1.0s 
- => CACHED [dashboard-frontend 3/5] COPY package.json package-lock.json ./                                                                                            0.0s 
- => CACHED [dashboard-frontend 4/5] RUN npm install                                                                                                                   0.0s 
- => CANCELED [dashboard-frontend 5/5] COPY . .                                                                                                                        3.5s 
- => [processor-worker 6/6] RUN npm run build                                                                                                                          2.8s 
- => CANCELED [processor-worker] exporting to image                                                                                                                    0.1s 
- => => exporting layers                                                                                                                                               0.1s 
-------
- > [collector-api 9/9] RUN npm run build:
-0.568
-0.568 > collector-api@1.0.0 build
-0.568 > tsc
-0.568
-3.636 src/index.ts(20,56): error TS2769: No overload matches this call.
-3.636   Overload 1 of 3, '(obj: "Failed to connect to RabbitMQ", msg?: undefined): void', gave the following error.
-3.636     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
-3.636   Overload 2 of 3, '(obj: "Failed to connect to RabbitMQ", msg?: undefined, ...args: unknown[]): void', gave the following error.
-3.636     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
-3.637 src/index.ts(48,48): error TS2769: No overload matches this call.
-3.637   Overload 1 of 3, '(obj: "Failed to queue event", msg?: undefined): void', gave the following error.
-3.637     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
-3.637   Overload 2 of 3, '(obj: "Failed to queue event", msg?: undefined, ...args: unknown[]): void', gave the following error.
-3.637     Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
-------
-Dockerfile:17
-
---------------------
-
-  15 |     RUN chmod +x ./wait-for-it.sh
-
-  16 |
-
-  17 | >>> RUN npm run build
-
-  18 |
-
-  19 |     EXPOSE 3000
-
---------------------
-
-target collector-api: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2
+2025-11-06 23:27:11.862 | npm error code 1
+2025-11-06 23:27:11.863 | npm error path /app/node_modules/bcrypt
+2025-11-06 23:27:11.863 | npm error command failed
+2025-11-06 23:27:11.863 | npm error command sh -c node-pre-gyp install --fallback-to-build
+2025-11-06 23:27:11.863 | npm error Failed to execute '/usr/local/bin/node /usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js configure --fallback-to-build --module=/app/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node --module_name=bcrypt_lib --module_path=/app/node_modules/bcrypt/lib/binding/napi-v3 --napi_version=9 --node_abi_napi=napi --napi_build_version=3 --node_napi_label=napi-v3' (1)
+2025-11-06 23:27:11.863 | npm error node-pre-gyp info it worked if it ends with ok
+2025-11-06 23:27:11.863 | npm error node-pre-gyp info using node-pre-gyp@1.0.11
+2025-11-06 23:27:11.863 | npm error node-pre-gyp info using node@20.19.5 | linux | x64
+2025-11-06 23:27:11.863 | npm error node-pre-gyp info build requesting source compile
+2025-11-06 23:27:11.863 | npm error gyp info it worked if it ends with ok
+2025-11-06 23:27:11.863 | npm error gyp info using node-gyp@10.1.0
+2025-11-06 23:27:11.863 | npm error gyp info using node@20.19.5 | linux | x64
+2025-11-06 23:27:11.863 | npm error gyp info ok 
+2025-11-06 23:27:11.863 | npm error gyp info it worked if it ends with ok
+2025-11-06 23:27:11.863 | npm error gyp info using node-gyp@10.1.0
+2025-11-06 23:27:11.863 | npm error gyp info using node@20.19.5 | linux | x64
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python 
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python Python is not set from command line or npm configuration
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python Python is not set from environment variable PYTHON
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python checking if "python3" can be used
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - executable path is ""
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - "" could not be run
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python checking if "python" can be used
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - executable path is ""
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - "" could not be run
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python 
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python **********************************************************
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python You need to install the latest version of Python.
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python Node-gyp should be able to find and use Python. If not,
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python you can try one of the following options:
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - Use the switch --python="/path/to/pythonexecutable"
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python (accepted by both node-gyp and npm)
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - Set the environment variable PYTHON
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python - Set the npm configuration variable python:
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python npm config set python "/path/to/pythonexecutable"
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python For more information consult the documentation at:
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python https://github.com/nodejs/node-gyp#installation
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python **********************************************************
+2025-11-06 23:27:11.863 | npm error gyp ERR! find Python 
+2025-11-06 23:27:11.863 | npm error gyp ERR! configure error 
+2025-11-06 23:27:11.863 | npm error gyp ERR! stack Error: Could not find any Python installation to use
+2025-11-06 23:27:11.863 | npm error gyp ERR! stack at PythonFinder.fail (/usr/local/lib/node_modules/npm/node_modules/node-gyp/lib/find-python.js:306:11)
+2025-11-06 23:27:11.863 | npm error gyp ERR! stack at PythonFinder.findPython (/usr/local/lib/node_modules/npm/node_modules/node-gyp/lib/find-python.js:164:17)
+2025-11-06 23:27:11.863 | npm error gyp ERR! stack at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-11-06 23:27:11.863 | npm error gyp ERR! stack at async configure (/usr/local/lib/node_modules/npm/node_modules/node-gyp/lib/configure.js:27:18)
+2025-11-06 23:27:11.863 | npm error gyp ERR! stack at async run (/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js:81:18)
+2025-11-06 23:27:11.863 | npm error gyp ERR! System Linux 6.6.87.2-microsoft-standard-WSL2
+2025-11-06 23:27:11.863 | npm error gyp ERR! command "/usr/local/bin/node" "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js" "configure" "--fallback-to-build" "--module=/app/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node" "--module_name=bcrypt_lib" "--module_path=/app/node_modules/bcrypt/lib/binding/napi-v3" "--napi_version=9" "--node_abi_napi=napi" "--napi_build_version=3" "--node_napi_label=napi-v3"
+2025-11-06 23:27:11.863 | npm error gyp ERR! cwd /app/node_modules/bcrypt
+2025-11-06 23:27:11.863 | npm error gyp ERR! node -v v20.19.5
+2025-11-06 23:27:11.863 | npm error gyp ERR! node-gyp -v v10.1.0
+2025-11-06 23:27:11.863 | npm error gyp ERR! not ok 
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! build error 
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! stack Error: Failed to execute '/usr/local/bin/node /usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js configure --fallback-to-build --module=/app/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node --module_name=bcrypt_lib --module_path=/app/node_modules/bcrypt/lib/binding/napi-v3 --napi_version=9 --node_abi_napi=napi --napi_build_version=3 --node_napi_label=napi-v3' (1)
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! stack     at ChildProcess.<anonymous> (/app/node_modules/@mapbox/node-pre-gyp/lib/util/compile.js:89:23)
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! stack     at ChildProcess.emit (node:events:524:28)
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! stack     at maybeClose (node:internal/child_process:1104:16)
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! stack     at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! System Linux 6.6.87.2-microsoft-standard-WSL2
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! command "/usr/local/bin/node" "/app/node_modules/@mapbox/node-pre-gyp/bin/node-pre-gyp" "install" "--fallback-to-build"
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! cwd /app/node_modules/bcrypt
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! node -v v20.19.5
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! node-pre-gyp -v v1.0.11
+2025-11-06 23:27:11.863 | npm error node-pre-gyp ERR! not ok
+2025-11-06 23:27:11.864 | npm error A complete log of this run can be found in: /root/.npm/_logs/2025-11-06T20_27_11_339Z-debug-0.log

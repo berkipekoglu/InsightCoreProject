@@ -4,5 +4,6 @@
   "phase-2-sdk": "Phase 2: Client-Side SDK",
   "phase-3-ingestion-pipeline": "Phase 3: Ingestion Pipeline",
   "phase-4-processor-worker": "Phase 4: Processor Worker",
-  "phase-5-user-management-api": "Phase 5: User Management API"
+  "phase-5-user-management-api": "Phase 5: User Management API",
+  "phase-6-dashboard-data-api": "Phase 6: Dashboard Data API"
 }
