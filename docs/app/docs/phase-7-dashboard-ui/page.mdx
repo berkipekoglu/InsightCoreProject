@@ -1,0 +1,63 @@
+# Phase 7: Dashboard UI (Core & Onboarding) - Overview
+
+This document provides an overview of the foundational user interface components of the InsightCore dashboard, built with Next.js (App Router) and Tailwind CSS.
+
+## UI/UX Principles
+
+The user interface is designed with a modern, clean aesthetic inspired by platforms like Vercel and Linear. Key principles include:
+
+-   **Dark Theme:** A dark background to reduce eye strain and improve focus.
+-   **Minimalism:** Clean, simple forms and layouts.
+-   **Clarity:** Clear user flows for core actions like logging in, registering, and creating projects.
+
+## Core Pages
+
+### 1. Login Page (`/`)
+
+The main entry point for existing users.
+
+-   **File:** `src/app/page.tsx`
+-   **Functionality:**
+    -   Presents a form with email and password fields.
+    -   On submission, it calls the `login` function from the API client (`/lib/api.ts`).
+    -   Upon successful authentication, it receives a JWT (JSON Web Token) from the `dashboard-api`.
+    -   The JWT is stored in the browser's `localStorage` under the key `insight-token`.
+    -   The user is then automatically redirected to the `/dashboard` page.
+
+### 2. Register Page (`/register`)
+
+Allows new users to create an account.
+
+-   **File:** `src/app/register/page.tsx`
+-   **Functionality:**
+    -   Presents a form similar to the login page.
+    -   On submission, it calls the `register` function from the API client.
+    -   If registration is successful, a success message is displayed, and the user is redirected to the login page (`/`) to sign in with their new credentials.
+
+### 3. Dashboard & Onboarding (`/dashboard`)
+
+This is the main, authenticated view of the application. It serves a dual purpose.
+
+-   **File:** `src/app/dashboard/page.tsx`
+-   **Authentication:** The page first checks for the presence of the `insight-token` in `localStorage`. If the token is not found, it redirects the user back to the login page.
+
+-   **Onboarding View:**
+    -   If the authenticated user has **no projects**, the page displays an onboarding UI.
+    -   This UI prompts the user to create their first project by providing a project name.
+    -   Upon creation, the `dashboard-api` returns the new `project_id`, and the UI dynamically generates the `<script>` tag for the user to copy and install on their website.
+
+-   **Dashboard View:**
+    -   If the user has one or more projects, the page displays a list of these projects as interactive cards.
+    -   This view serves as the starting point for navigating to project-specific data, such as session lists and heatmaps (to be built in subsequent phases).
+
+## API Client (`/lib/api.ts`)
+
+To keep UI components clean and centralize API logic, a wrapper module was created.
+
+-   **File:** `src/lib/api.ts`
+-   **Purpose:**
+    -   Provides simple, named functions for all API interactions (e.g., `login`, `getProjects`).
+    -   Automatically attaches the JWT from `localStorage` to the `Authorization` header of authenticated requests.
+    -   Handles base URL construction and standardizes error handling.
+
+This concludes the overview of the Phase 7 UI foundation. The core user journey from registration to project creation is now fully implemented.

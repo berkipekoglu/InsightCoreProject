@@ -37,6 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fastify_1 = __importDefault(require("fastify"));
+const cors_1 = __importDefault(require("@fastify/cors"));
 const pg_1 = require("pg");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -47,6 +48,11 @@ const zlib_1 = require("zlib");
 const util_1 = require("util");
 // --- Server and DB Initialization ---
 const server = (0, fastify_1.default)({ logger: true });
+// Register CORS
+server.register(cors_1.default, {
+    origin: 'http://localhost:3001', // Allow requests from our frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow common methods
+});
 // PostgreSQL
 const pool = new pg_1.Pool({
     connectionString: process.env.DATABASE_URL,
@@ -172,12 +178,26 @@ server.post("/projects", { preHandler: [authenticate] }, async (request, reply) 
     }
     try {
         const projectId = `prj_${(0, nanoid_1.nanoid)(12)}`;
-        const res = await pool.query("INSERT INTO projects (id, name, organization_id) VALUES ($1, $2, $3) RETURNING *", [projectId, name, organizationId]);
+        const res = await pool.query('INSERT INTO projects (id, name, organization_id) VALUES ($1, $2, $3) RETURNING *', [projectId, name, organizationId]);
         reply.code(201).send(res.rows[0]);
     }
     catch (err) {
-        server.log.error(err);
-        reply.code(500).send({ error: "Failed to create project" });
+        server.log.error(err, 'Failed to create project');
+        reply.code(500).send({ error: 'Failed to create project' });
+    }
+});
+server.get('/projects', { preHandler: [authenticate] }, async (request, reply) => {
+    const organizationId = request.user?.organizationId;
+    if (!organizationId) {
+        return reply.code(401).send({ error: 'User organization not found' });
+    }
+    try {
+        const res = await pool.query('SELECT * FROM projects WHERE organization_id = $1 ORDER BY created_at DESC', [organizationId]);
+        reply.send(res.rows);
+    }
+    catch (err) {
+        server.log.error(err, 'Failed to get projects');
+        reply.code(500).send({ error: 'Failed to get projects' });
     }
 });
 // Phase 6: Data Endpoints

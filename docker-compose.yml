@@ -17,6 +17,12 @@ services:
       POSTGRES_PASSWORD: insightcore_password
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./postgresql_schemas.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U insightcore_user -d insightcore_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - insightcore-network
 
@@ -25,8 +31,8 @@ services:
     container_name: insightcore_clickhouse
     restart: always
     ports:
-      - "8123:8123" # HTTP interface
-      - "9000:9000" # Client interface
+      - "8123:8123"
+      - "9000:9000"
     environment:
       CLICKHOUSE_USER: insightcore_user
       CLICKHOUSE_PASSWORD: insightcore_password
@@ -34,6 +40,11 @@ services:
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q 'http://localhost:8123/ping'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - insightcore-network
 
@@ -42,13 +53,18 @@ services:
     container_name: insightcore_rabbitmq
     restart: always
     ports:
-      - "5672:5672" # AMQP protocol
-      - "15672:15672" # Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: insightcore_user
       RABBITMQ_DEFAULT_PASS: insightcore_password
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - insightcore-network
 
@@ -57,14 +73,19 @@ services:
     container_name: insightcore_minio
     restart: always
     ports:
-      - "9002:9000" # MinIO API
-      - "9001:9001" # MinIO Console
+      - "9002:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: insightcore_minio_user
       MINIO_ROOT_PASSWORD: insightcore_minio_password
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - insightcore-network
 
@@ -76,11 +97,14 @@ services:
       - "3000:3000"
     environment:
       RABBITMQ_URL: amqp://insightcore_user:insightcore_password@rabbitmq
-    command: ["./wait-for-it.sh", "rabbitmq", "5672", "--", "npm", "start"]
+    command: sh -c "npm cache clean --force && npm install && npm run build && npm start"
+    volumes:
+      - ./sdk:/app/sdk
     networks:
       - insightcore-network
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   processor-worker:
     build: ./processor-worker
@@ -97,13 +121,16 @@ services:
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: insightcore_minio_user
       MINIO_SECRET_KEY: insightcore_minio_password
-    command: ["/bin/sh", "-c", "sleep 10 && npm start"]
+    command: sh -c "npm install && npm run build && npm start"
     networks:
       - insightcore-network
     depends_on:
-      - rabbitmq
-      - clickhouse
-      - minio
+      rabbitmq:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   dashboard-api:
     build: ./dashboard-api
@@ -117,11 +144,12 @@ services:
     volumes:
       - ./dashboard-api:/app
       - /app/node_modules
-    command: sh -c "npm rebuild bcrypt --build-from-source && npm run build && npm run dev"
+    command: sh -c "npm install && npm rebuild bcrypt --build-from-source && npm run build && npm run dev"
     networks:
       - insightcore-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   dashboard-frontend:
     build: ./dashboard-frontend
@@ -139,6 +167,7 @@ services:
       - insightcore-network
     depends_on:
       - collector-api
+      - dashboard-api
 
   docs:
     build: ./docs

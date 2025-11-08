@@ -1,5 +1,6 @@
-import Fastify, { FastifyRequest, FastifyReply } from "fastify";
-import { Pool } from "pg";
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import cors from '@fastify/cors';
+import { Pool } from 'pg';
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
@@ -13,6 +14,12 @@ import { promisify } from "util";
 
 // --- Server and DB Initialization ---
 const server = Fastify({ logger: true });
+
+// Register CORS
+server.register(cors, {
+    origin: 'http://localhost:3001', // Allow requests from our frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow common methods
+});
 
 // PostgreSQL
 const pool = new Pool({
@@ -190,19 +197,35 @@ server.post(
     }
 
     try {
-      const projectId = `prj_${nanoid(12)}`;
-      const res = await pool.query(
-        "INSERT INTO projects (id, name, organization_id) VALUES ($1, $2, $3) RETURNING *",
-        [projectId, name, organizationId]
-      );
-
-      reply.code(201).send(res.rows[0]);
+        const projectId = `prj_${nanoid(12)}`;
+        const res = await pool.query(
+            'INSERT INTO projects (id, name, organization_id) VALUES ($1, $2, $3) RETURNING *',
+            [projectId, name, organizationId]
+        );
+        reply.code(201).send(res.rows[0]);
     } catch (err) {
-      server.log.error(err);
-      reply.code(500).send({ error: "Failed to create project" });
+        server.log.error(err, 'Failed to create project');
+        reply.code(500).send({ error: 'Failed to create project' });
     }
-  }
-);
+});
+
+server.get('/projects', { preHandler: [authenticate] }, async (request, reply) => {
+    const organizationId = request.user?.organizationId;
+    if (!organizationId) {
+        return reply.code(401).send({ error: 'User organization not found' });
+    }
+
+    try {
+        const res = await pool.query(
+            'SELECT * FROM projects WHERE organization_id = $1 ORDER BY created_at DESC',
+            [organizationId]
+        );
+        reply.send(res.rows);
+    } catch (err) {
+        server.log.error(err, 'Failed to get projects');
+        reply.code(500).send({ error: 'Failed to get projects' });
+    }
+});
 
 // Phase 6: Data Endpoints
 

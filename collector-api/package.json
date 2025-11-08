@@ -14,8 +14,9 @@
   "dependencies": {
     "@types/amqplib": "^0.10.8",
     "@types/node": "^24.10.0",
-    "amqplib": "^0.10.9",
-    "fastify": "^5.6.1",
-    "typescript": "^5.9.3"
+    "amqplib": "0.10.9",
+    "@fastify/static": "7.0.4",
+    "fastify": "4.28.1",
+    "typescript": "5.5.3"
   }
 }

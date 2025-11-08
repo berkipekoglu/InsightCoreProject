@@ -1,9 +1,22 @@
 import Fastify, { FastifyRequest } from 'fastify';
 import amqp from 'amqplib';
+import path from 'path';
+import fastifyStatic from '@fastify/static';
 
 const fastify = Fastify({
   logger: true,
 });
+
+// --- Static File Serving for SDK ---
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, '../../sdk/dist'),
+  prefix: '/', 
+});
+
+fastify.get('/sdk.js', (req, reply) => {
+  reply.sendFile('index.js');
+});
+
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://insightcore_user:insightcore_password@rabbitmq';
 const EVENTS_QUEUE = 'events_queue'; // As per Phase 3 spec
