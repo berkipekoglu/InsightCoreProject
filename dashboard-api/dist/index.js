@@ -75,6 +75,41 @@ const minioClient = new Minio.Client({
 const MINIO_BUCKET = "rrweb-sessions";
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret";
 const gunzipAsync = (0, util_1.promisify)(zlib_1.gunzip);
+const CLICKHOUSE_TABLE_QUERIES = [
+    `CREATE TABLE IF NOT EXISTS heatmap_events (
+        project_id String,
+        session_id String,
+        url String,
+        x UInt16,
+        y UInt16,
+        event_type Enum8('mousemove' = 1, 'click' = 2),
+        timestamp DateTime
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(timestamp)
+    ORDER BY (project_id, session_id, timestamp);`,
+    `CREATE TABLE IF NOT EXISTS session_events (
+        project_id String,
+        session_id String,
+        start_time DateTime,
+        duration UInt32,
+        device_type LowCardinality(String),
+        browser LowCardinality(String),
+        os LowCardinality(String),
+        country_code LowCardinality(String),
+        has_errors UInt8,
+        has_rage_clicks UInt8
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(start_time)
+    ORDER BY (project_id, start_time);`
+];
+async function ensureClickHouseTables() {
+    for (const query of CLICKHOUSE_TABLE_QUERIES) {
+        await clickhouse.command({ query });
+    }
+    server.log.info('ClickHouse tables ensured.');
+}
 const authenticate = async (request, reply) => {
     try {
         const token = request.headers.authorization?.replace("Bearer ", "");
@@ -98,13 +133,15 @@ const authorizeProject = async (request, reply) => {
     const { projectId } = request.params;
     const { organizationId } = request.user;
     try {
-        const res = await pool.query("SELECT id FROM projects WHERE id = $1 AND organization_id = $2", [projectId, organizationId]);
+        const res = await pool.query('SELECT organization_id FROM projects WHERE id = $1', [projectId]);
         if (res.rows.length === 0) {
-            return reply.code(403).send({
-                error: "Forbidden",
-                message: "You do not have access to this project.",
-            });
+            return reply.code(404).send({ error: 'Not Found', message: 'Project not found.' });
         }
+        const projectOrgId = res.rows[0].organization_id;
+        if (projectOrgId !== organizationId) {
+            return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this project.' });
+        }
+        // If we are here, user is authorized
     }
     catch (err) {
         server.log.error(err, "Project authorization failed");
@@ -286,6 +323,7 @@ server.get("/projects/:projectId/heatmap", { preHandler: [authenticate, authoriz
 // --- Server Start ---
 const start = async () => {
     try {
+        await ensureClickHouseTables();
         await server.listen({ port: 8080, host: "0.0.0.0" });
         server.log.info(`Dashboard API server listening on 8080`);
     }

@@ -11,7 +11,8 @@
   "dependencies": {
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "next": "16.0.1"
+    "rrweb-player": "^2.0.0-alpha.4",
+    "heatmap.js": "^2.0.5"
   },
   "devDependencies": {
     "typescript": "^5",

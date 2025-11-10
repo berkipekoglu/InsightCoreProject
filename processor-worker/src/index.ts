@@ -25,6 +25,43 @@ const BATCH_TIMEOUT = 5000; // 5 seconds
 
 const gzipAsync = promisify(gzip);
 
+const CLICKHOUSE_TABLE_QUERIES = [
+    `CREATE TABLE IF NOT EXISTS heatmap_events (
+        project_id String,
+        session_id String,
+        url String,
+        x UInt16,
+        y UInt16,
+        event_type Enum8('mousemove' = 1, 'click' = 2),
+        timestamp DateTime
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(timestamp)
+    ORDER BY (project_id, session_id, timestamp);`,
+    `CREATE TABLE IF NOT EXISTS session_events (
+        project_id String,
+        session_id String,
+        start_time DateTime,
+        duration UInt32,
+        device_type LowCardinality(String),
+        browser LowCardinality(String),
+        os LowCardinality(String),
+        country_code LowCardinality(String),
+        has_errors UInt8,
+        has_rage_clicks UInt8
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(start_time)
+    ORDER BY (project_id, start_time);`
+];
+
+async function ensureClickHouseTables() {
+    for (const query of CLICKHOUSE_TABLE_QUERIES) {
+        await clickhouse.command({ query });
+    }
+    console.log('ClickHouse tables ensured.');
+}
+
 // --- Client Initialization ---
 let clickhouse: ClickHouseClient;
 let minioClient: Minio.Client;
@@ -184,6 +221,7 @@ async function processBatch(channel: amqp.Channel) {
 async function startWorker() {
     console.log('Starting processor-worker...');
     initializeClients();
+    await ensureClickHouseTables();
 
     try {
         const connection = await amqp.connect(RABBITMQ_URL);
