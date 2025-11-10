@@ -1,16 +1,2 @@
-2025-11-08 14:20:43.874 | npm warn using --force Recommended protections disabled.
-2025-11-08 14:20:44.931 | 
-2025-11-08 14:20:44.931 | up to date, audited 115 packages in 824ms
-2025-11-08 14:20:44.931 | 
-2025-11-08 14:20:44.931 | 18 packages are looking for funding
-2025-11-08 14:20:44.931 |   run `npm fund` for details
-2025-11-08 14:20:44.932 | 
-2025-11-08 14:20:44.932 | found 0 vulnerabilities
-2025-11-08 14:20:45.044 | 
-2025-11-08 14:20:45.044 | > collector-api@1.0.0 build
-2025-11-08 14:20:45.044 | > tsc
-2025-11-08 14:20:45.044 | 
-2025-11-08 14:20:46.770 | error TS6059: File '/app/sdk/src/index.ts' is not under 'rootDir' '/app/src'. 'rootDir' is expected to contain all source files.
-2025-11-08 14:20:46.770 |   The file is in the program because:
-2025-11-08 14:20:46.770 |     Matched by default include pattern '**/*'
-2025-11-08 14:20:47.296 | npm warn using --force Recommended protections disabled.
+http://localhost:3000/sdk.js
+adresinde js dosyasına halen tarayıcıdan ulaşamıyorum 

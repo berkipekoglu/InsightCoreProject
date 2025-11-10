@@ -9,7 +9,7 @@ const fastify = Fastify({
 
 // --- Static File Serving for SDK ---
 fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../../sdk/dist'),
+  root: path.join(__dirname, '../sdk/dist'),
   prefix: '/', 
 });
 
