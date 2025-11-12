@@ -15,18 +15,15 @@ import { promisify } from "util";
 // --- Server and DB Initialization ---
 const server = Fastify({ logger: true });
 
-// Register CORS
 server.register(cors, {
-    origin: 'http://localhost:3001', // Allow requests from our frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow common methods
+    origin: 'http://localhost:3001',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
 });
 
-// PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// ClickHouse
 const clickhouse = createClickHouseClient({
   url: `http://${process.env.CLICKHOUSE_HOST || "clickhouse"}:${
     process.env.CLICKHOUSE_PORT || 8123
@@ -36,10 +33,9 @@ const clickhouse = createClickHouseClient({
   database: process.env.CLICKHOUSE_DATABASE || "insightcore_analytics",
 });
 
-// MinIO
 const minioClient = new Minio.Client({
   endPoint: process.env.MINIO_ENDPOINT || "minio",
-  port: parseInt(process.env.MINIO_PORT || "9002", 10),
+  port: parseInt(process.env.MINIO_PORT || "9000", 10),
   useSSL: false,
   accessKey: process.env.MINIO_ACCESS_KEY || "insightcore_minio_user",
   secretKey: process.env.MINIO_SECRET_KEY || "insightcore_minio_password",
@@ -76,7 +72,7 @@ const CLICKHOUSE_TABLE_QUERIES = [
     )
     ENGINE = MergeTree()
     PARTITION BY toYYYYMM(start_time)
-    ORDER BY (project_id, start_time);`
+    ORDER BY (project_id, session_id, start_time);`
 ];
 
 async function ensureClickHouseTables() {
@@ -137,7 +133,6 @@ const authorizeProject = async (
         if (projectOrgId !== organizationId) {
             return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this project.' });
         }
-        // If we are here, user is authorized
     } catch (err) {
     server.log.error(err, "Project authorization failed");
     reply.code(500).send({ error: "Internal Server Error" });
@@ -146,8 +141,6 @@ const authorizeProject = async (
 
 // --- API Endpoints ---
 
-// Phase 5: User Management
-// 1. User Registration
 server.post("/register", async (request, reply) => {
   const { email, password } = request.body as any;
   if (!email || !password) {
@@ -158,14 +151,12 @@ server.post("/register", async (request, reply) => {
   try {
     await client.query("BEGIN");
 
-    // Create an organization for the user
     const orgResult = await client.query(
       "INSERT INTO organizations (name) VALUES ($1) RETURNING id",
       [`${email.split("@")[0]}'s Organization`]
     );
     const organizationId = orgResult.rows[0].id;
 
-    // Hash password and create user
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
@@ -186,7 +177,6 @@ server.post("/register", async (request, reply) => {
   }
 });
 
-// 2. User Login
 server.post("/login", async (request, reply) => {
   const { email, password } = request.body as any;
   if (!email || !password) {
@@ -222,7 +212,6 @@ server.post("/login", async (request, reply) => {
   }
 });
 
-// 3. Project Creation
 server.post(
   "/projects",
   { preHandler: [authenticate] },
@@ -268,9 +257,6 @@ server.get('/projects', { preHandler: [authenticate] }, async (request, reply) =
     }
 });
 
-// Phase 6: Data Endpoints
-
-// Get Session List
 server.get<{ Params: { projectId: string } }>(
   "/projects/:projectId/sessions",
   { preHandler: [authenticate, authorizeProject] },
@@ -278,13 +264,35 @@ server.get<{ Params: { projectId: string } }>(
     const { projectId } = request.params as any;
     try {
       const resultSet = await clickhouse.query({
-        query: `SELECT session_id, start_time, duration, device_type, browser, os, has_errors, has_rage_clicks FROM session_events WHERE project_id = {projectId:String} ORDER BY start_time DESC`,
+        query: `
+          SELECT
+              session_id,
+              max(start_time) as latest_start_time,
+              argMax(duration, start_time) as duration,
+              argMax(device_type, start_time) as device_type,
+              argMax(browser, start_time) as browser,
+              argMax(os, start_time) as os,
+              argMax(has_errors, start_time) as has_errors,
+              argMax(has_rage_clicks, start_time) as has_rage_clicks
+          FROM session_events
+          WHERE project_id = {projectId:String}
+          GROUP BY session_id
+          ORDER BY latest_start_time DESC
+        `,
         query_params: {
           projectId,
         },
       });
       const sessions = await resultSet.json();
-      reply.send(sessions);
+      // Frontend'in 'start_time' beklemesi ihtimaline karşı alias'ı geri çevirelim
+      const formattedSessions = sessions.data.map((session: any) => ({
+        ...session,
+        start_time: session.latest_start_time,
+        // latest_start_time: undefined // İsteğe bağlı: Orijinal alanı kaldır
+      }));
+
+      server.log.info({ sessionsFromClickHouse: formattedSessions }, 'Raw sessions data from ClickHouse');
+      reply.send({ data: formattedSessions });
     } catch (err) {
       server.log.error(err, "Failed to fetch sessions from ClickHouse");
       reply.code(500).send({ error: "Failed to fetch sessions" });
@@ -292,7 +300,6 @@ server.get<{ Params: { projectId: string } }>(
   }
 );
 
-// Get Session Replay Data
 server.get(
   "/projects/:projectId/sessions/:sessionId/replay",
   { preHandler: [authenticate, authorizeProject] },
@@ -324,7 +331,6 @@ server.get(
           .send({ error: "Replay data not found for this session." });
       }
 
-      // Sort events by timestamp just in case
       allEvents.sort((a, b) => a.timestamp - b.timestamp);
 
       reply.send(allEvents);
@@ -335,7 +341,6 @@ server.get(
   }
 );
 
-// Get Heatmap Data
 server.get(
   "/projects/:projectId/heatmap",
   { preHandler: [authenticate, authorizeProject] },
@@ -374,13 +379,13 @@ server.get(
   }
 );
 
-// --- Server Start ---
 const start = async () => {
-    try {
-        await ensureClickHouseTables();
-        await server.listen({ port: 8080, host: "0.0.0.0" });
-        server.log.info(`Dashboard API server listening on 8080`);
-    } catch (err) {    server.log.error(err, "Failed to start server");
+  try {
+    await ensureClickHouseTables();
+    await server.listen({ port: 8080, host: "0.0.0.0" });
+    server.log.info(`Dashboard API server listening on 8080`);
+  } catch (err) {
+    server.log.error(err, "Failed to start server");
     process.exit(1);
   }
 };

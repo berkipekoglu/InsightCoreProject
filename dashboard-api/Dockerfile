@@ -1,12 +1,14 @@
 FROM node:20-alpine
 
-# Install build tools required for native modules like bcrypt
-RUN apk add --no-cache python3 make g++
-
 WORKDIR /app
 
-COPY package*.json ./
+# Install build tools required for native addons like bcrypt
+RUN apk add --no-cache python3 make g++
 
+# Cache-busting line
+ENV CACHE_BUSTER=4
+
+COPY package*.json ./
 RUN npm install
 
 COPY . .

@@ -48,23 +48,19 @@ const zlib_1 = require("zlib");
 const util_1 = require("util");
 // --- Server and DB Initialization ---
 const server = (0, fastify_1.default)({ logger: true });
-// Register CORS
 server.register(cors_1.default, {
-    origin: 'http://localhost:3001', // Allow requests from our frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow common methods
+    origin: 'http://localhost:3001',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
 });
-// PostgreSQL
 const pool = new pg_1.Pool({
     connectionString: process.env.DATABASE_URL,
 });
-// ClickHouse
 const clickhouse = (0, client_1.createClient)({
     url: `http://${process.env.CLICKHOUSE_HOST || "clickhouse"}:${process.env.CLICKHOUSE_PORT || 8123}`,
     username: process.env.CLICKHOUSE_USER || "insightcore_user",
     password: process.env.CLICKHOUSE_PASSWORD || "insightcore_password",
     database: process.env.CLICKHOUSE_DATABASE || "insightcore_analytics",
 });
-// MinIO
 const minioClient = new Minio.Client({
     endPoint: process.env.MINIO_ENDPOINT || "minio",
     port: parseInt(process.env.MINIO_PORT || "9002", 10),
@@ -102,7 +98,7 @@ const CLICKHOUSE_TABLE_QUERIES = [
     )
     ENGINE = MergeTree()
     PARTITION BY toYYYYMM(start_time)
-    ORDER BY (project_id, start_time);`
+    ORDER BY (project_id, session_id, start_time);`
 ];
 async function ensureClickHouseTables() {
     for (const query of CLICKHOUSE_TABLE_QUERIES) {
@@ -141,7 +137,6 @@ const authorizeProject = async (request, reply) => {
         if (projectOrgId !== organizationId) {
             return reply.code(403).send({ error: 'Forbidden', message: 'You do not have access to this project.' });
         }
-        // If we are here, user is authorized
     }
     catch (err) {
         server.log.error(err, "Project authorization failed");
@@ -149,8 +144,6 @@ const authorizeProject = async (request, reply) => {
     }
 };
 // --- API Endpoints ---
-// Phase 5: User Management
-// 1. User Registration
 server.post("/register", async (request, reply) => {
     const { email, password } = request.body;
     if (!email || !password) {
@@ -159,10 +152,8 @@ server.post("/register", async (request, reply) => {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
-        // Create an organization for the user
         const orgResult = await client.query("INSERT INTO organizations (name) VALUES ($1) RETURNING id", [`${email.split("@")[0]}'s Organization`]);
         const organizationId = orgResult.rows[0].id;
-        // Hash password and create user
         const saltRounds = 10;
         const passwordHash = await bcrypt_1.default.hash(password, saltRounds);
         const userResult = await client.query("INSERT INTO users (email, password_hash, organization_id) VALUES ($1, $2, $3) RETURNING id", [email, passwordHash, organizationId]);
@@ -179,7 +170,6 @@ server.post("/register", async (request, reply) => {
         client.release();
     }
 });
-// 2. User Login
 server.post("/login", async (request, reply) => {
     const { email, password } = request.body;
     if (!email || !password) {
@@ -203,7 +193,6 @@ server.post("/login", async (request, reply) => {
         reply.code(500).send({ error: "Login failed" });
     }
 });
-// 3. Project Creation
 server.post("/projects", { preHandler: [authenticate] }, async (request, reply) => {
     const { name } = request.body;
     if (!name) {
@@ -237,18 +226,34 @@ server.get('/projects', { preHandler: [authenticate] }, async (request, reply) =
         reply.code(500).send({ error: 'Failed to get projects' });
     }
 });
-// Phase 6: Data Endpoints
-// Get Session List
 server.get("/projects/:projectId/sessions", { preHandler: [authenticate, authorizeProject] }, async (request, reply) => {
     const { projectId } = request.params;
     try {
         const resultSet = await clickhouse.query({
-            query: `SELECT session_id, start_time, duration, device_type, browser, os, has_errors, has_rage_clicks FROM session_events WHERE project_id = {projectId:String} ORDER BY start_time DESC`,
+            query: `
+          SELECT *
+          FROM (
+              SELECT
+                  session_id,
+                  argMax(start_time, start_time) as start_time,
+                  argMax(duration, start_time) as duration,
+                  argMax(device_type, start_time) as device_type,
+                  argMax(browser, start_time) as browser,
+                  argMax(os, start_time) as os,
+                  argMax(has_errors, start_time) as has_errors,
+                  argMax(has_rage_clicks, start_time) as has_rage_clicks
+              FROM session_events
+              WHERE project_id = {projectId:String}
+              GROUP BY session_id
+          )
+          ORDER BY start_time DESC
+        `,
             query_params: {
                 projectId,
             },
         });
         const sessions = await resultSet.json();
+        server.log.info({ sessionsFromClickHouse: sessions }, 'Raw sessions data from ClickHouse');
         reply.send(sessions);
     }
     catch (err) {
@@ -256,7 +261,6 @@ server.get("/projects/:projectId/sessions", { preHandler: [authenticate, authori
         reply.code(500).send({ error: "Failed to fetch sessions" });
     }
 });
-// Get Session Replay Data
 server.get("/projects/:projectId/sessions/:sessionId/replay", { preHandler: [authenticate, authorizeProject] }, async (request, reply) => {
     const { projectId, sessionId } = request.params;
     try {
@@ -278,7 +282,6 @@ server.get("/projects/:projectId/sessions/:sessionId/replay", { preHandler: [aut
                 .code(404)
                 .send({ error: "Replay data not found for this session." });
         }
-        // Sort events by timestamp just in case
         allEvents.sort((a, b) => a.timestamp - b.timestamp);
         reply.send(allEvents);
     }
@@ -287,7 +290,6 @@ server.get("/projects/:projectId/sessions/:sessionId/replay", { preHandler: [aut
         reply.code(500).send({ error: "Failed to fetch replay data" });
     }
 });
-// Get Heatmap Data
 server.get("/projects/:projectId/heatmap", { preHandler: [authenticate, authorizeProject] }, async (request, reply) => {
     const { projectId } = request.params;
     const { url } = request.query;
@@ -320,7 +322,6 @@ server.get("/projects/:projectId/heatmap", { preHandler: [authenticate, authoriz
         reply.code(500).send({ error: "Failed to fetch heatmap data" });
     }
 });
-// --- Server Start ---
 const start = async () => {
     try {
         await ensureClickHouseTables();

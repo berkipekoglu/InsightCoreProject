@@ -22,7 +22,7 @@ const ScriptModal = ({
 }) => {
   if (!project) return null;
 
-  const script = `<script async src="http://localhost:3000/sdk.js" data-project-id="${project.id}" data-collector-url="http://localhost:8000/collect"><\/script>`;
+  const script = `<script async src="http://localhost:3000/sdk.js" data-project-id="${project.id}" data-collector-url="http://localhost:3000/collect"><\/script>`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
@@ -93,7 +93,7 @@ export default function DashboardPage() {
 
     try {
       const newProject = await createProject(newProjectName);
-      const script = `<script async src="http://localhost:3000/sdk.js" data-project-id="${newProject.id}" data-collector-url="http://localhost:8000/collect"><\/script>`;
+      const script = `<script async src="http://localhost:3000/sdk.js" data-project-id="${newProject.id}" data-collector-url="http://localhost:3000/collect"><\/script>`;
       setScriptToCopy(script);
       // Refresh projects list
       setProjects([newProject, ...projects]);

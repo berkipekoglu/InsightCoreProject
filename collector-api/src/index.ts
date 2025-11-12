@@ -2,18 +2,22 @@ import Fastify, { FastifyRequest } from 'fastify';
 import amqp from 'amqplib';
 import path from 'path';
 import fastifyStatic from '@fastify/static';
+import cors from '@fastify/cors';
 
-const fastify = Fastify({
-  logger: true,
+const server = Fastify({ logger: true });
+
+// Allow requests from any origin
+server.register(cors, {
+  origin: '*'
 });
 
-// --- Static File Serving for SDK ---
-fastify.register(fastifyStatic, {
+// Serve the SDK file
+server.register(fastifyStatic, {
   root: path.join(__dirname, '../sdk/dist'),
-  prefix: '/', 
+  prefix: '/',
 });
 
-fastify.get('/sdk.js', (req, reply) => {
+server.get('/sdk.js', (req, reply) => {
   reply.sendFile('index.js');
 });
 
@@ -28,9 +32,9 @@ async function connectRabbitMQ() {
     const connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
     await channel.assertQueue(EVENTS_QUEUE, { durable: true }); // durable:true makes the queue survive broker restarts
-    fastify.log.info(`Connected to RabbitMQ and asserted queue: ${EVENTS_QUEUE}`)
+    server.log.info(`Connected to RabbitMQ and asserted queue: ${EVENTS_QUEUE}`)
   } catch (error) {
-    fastify.log.error(error, 'Failed to connect to RabbitMQ');
+    server.log.error(error, 'Failed to connect to RabbitMQ');
     // Keep retrying connection
     setTimeout(connectRabbitMQ, 5000);
   }
@@ -40,7 +44,7 @@ async function connectRabbitMQ() {
  * Configure Fastify to not parse application/json, but instead pass the raw buffer.
  * This is a performance optimization to avoid the overhead of JSON parsing.
  */
-fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+server.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
   done(null, body);
 });
 
@@ -49,7 +53,7 @@ fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, bo
  * Its only job is to receive the raw request body and publish it to RabbitMQ.
  * It returns a 204 No Content response immediately.
  */
-fastify.post('/collect', async (request: FastifyRequest<{ Body: Buffer }>, reply) => {
+server.post('/collect', async (request: FastifyRequest<{ Body: Buffer }>, reply) => {
   try {
     // The body is already a Buffer thanks to the content type parser
     channel.sendToQueue(EVENTS_QUEUE, request.body, { persistent: true });
@@ -58,7 +62,7 @@ fastify.post('/collect', async (request: FastifyRequest<{ Body: Buffer }>, reply
     reply.code(204).send();
 
   } catch (error) {
-    fastify.log.error(error, 'Failed to queue event');
+    server.log.error(error, 'Failed to queue event');
     // If we can't queue, the service is effectively down. Return 500.
     reply.code(500).send({ status: 'error', message: 'Failed to queue event' });
   }
@@ -68,9 +72,9 @@ fastify.post('/collect', async (request: FastifyRequest<{ Body: Buffer }>, reply
 const start = async () => {
   try {
     await connectRabbitMQ();
-    await fastify.listen({ port: 3000, host: '0.0.0.0' });
+    await server.listen({ port: 3000, host: '0.0.0.0' });
   } catch (err) {
-    fastify.log.error(err);
+    server.log.error(err);
     process.exit(1);
   }
 };

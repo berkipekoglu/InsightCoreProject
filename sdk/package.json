@@ -5,16 +5,17 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc -w"
-  },
-  "author": "InsightCore Team",
-  "license": "MIT",
-  "devDependencies": {
-    "typescript": "^5.0.0"
+    "build": "esbuild src/index.ts --bundle --outfile=dist/index.js --format=iife --global-name=InsightCore"
   },
   "dependencies": {
     "rrweb": "^2.0.0-alpha.4",
-    "web-vitals": "^3.0.0"
+    "web-vitals": "^4.2.1",
+    "ua-parser-js": "^1.0.38"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/ua-parser-js": "^0.7.39",
+    "typescript": "^5.5.3",
+    "esbuild": "^0.23.0"
   }
 }

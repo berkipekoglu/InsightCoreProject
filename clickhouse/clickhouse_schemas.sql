@@ -2,8 +2,8 @@
 
 -- Table: heatmap_events
 CREATE TABLE IF NOT EXISTS heatmap_events (
-    project_id UUID,
-    session_id UUID,
+    project_id String,
+    session_id String,
     url String,
     x UInt16,
     y UInt16,
@@ -16,8 +16,8 @@ ORDER BY (project_id, session_id, timestamp);
 
 -- Table: session_events
 CREATE TABLE IF NOT EXISTS session_events (
-    project_id UUID,
-    session_id UUID,
+    project_id String,
+    session_id String,
     start_time DateTime,
     duration UInt32,
     device_type LowCardinality(String),
@@ -29,4 +29,4 @@ CREATE TABLE IF NOT EXISTS session_events (
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(start_time)
-ORDER BY (project_id, start_time);
+ORDER BY (project_id, session_id, start_time);

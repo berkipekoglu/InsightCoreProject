@@ -1,5 +1,6 @@
 import { record } from 'rrweb';
 import { onCLS, onFCP, onFID, onLCP, onTTFB } from 'web-vitals';
+import UAParser from 'ua-parser-js';
 
 const SESSION_ID_KEY = '_insight_core_session_id';
 const BATCH_INTERVAL = 10 * 1000; // 10 seconds
@@ -9,7 +10,7 @@ type InsightCoreConfig = {
     collectorUrl: string;
 };
 
-type EventType = 'replay' | 'heatmap' | 'metric' | 'error';
+type EventType = 'replay' | 'heatmap' | 'metric' | 'error' | 'meta';
 
 type BatchedPayload = {
     projectId: string;
@@ -69,38 +70,72 @@ class InsightCoreSDK {
     private start(): void {
         if (!this.config) return;
 
-        this.startRrwebRecording();
-        this.captureWebVitals();
-        this.captureErrors();
+        try {
+            this.captureMeta();
+            console.log("InsightCore SDK: Meta data captured.");
+        } catch (e) {
+            console.error("InsightCore SDK: Failed to capture meta data.", e);
+        }
+
+        try {
+            this.startRrwebRecording();
+            console.log("InsightCore SDK: rrweb recording started.");
+        } catch (e) {
+            console.error("InsightCore SDK: Failed to start rrweb recording.", e);
+        }
+
+        try {
+            this.captureWebVitals();
+            console.log("InsightCore SDK: Web Vitals capturing started.");
+        } catch (e) {
+            console.error("InsightCore SDK: Failed to capture Web Vitals.", e);
+        }
+
+        try {
+            this.captureErrors();
+            console.log("InsightCore SDK: Error capturing started.");
+        } catch (e) {
+            console.error("InsightCore SDK: Failed to set up error capturing.", e);
+        }
 
         setInterval(() => this.sendBatch(), BATCH_INTERVAL);
         window.addEventListener('beforeunload', () => this.sendBatch(true));
+        console.log("InsightCore SDK: Batch sending interval set up.");
     }
 
     private addToBuffer(type: EventType, payload: any): void {
         this.eventBuffer.push({ type, payload });
     }
 
+    private captureMeta(): void {
+        const parser = new UAParser();
+        const ua = parser.getResult();
+        this.addToBuffer('meta', {
+            startTime: new Date().toISOString(),
+            browser: ua.browser.name,
+            os: ua.os.name,
+            device: ua.device.type || 'desktop',
+            href: window.location.href,
+        });
+    }
+
     private startRrwebRecording(): void {
         this.stopRecording = record({
             emit: (event, isCheckout) => {
-                // Dual-channel collection
                 const isHeatmapEvent = (event.type === 3 /* IncrementalSnapshot */ && 
                                        (event.data.source === 1 /* MouseMove */ || 
                                        (event.data.source === 2 /* MouseInteraction */ && event.data.type === 2 /* Click */)));
 
                 if (isHeatmapEvent) {
-                    this.addToBuffer('heatmap', event);
+                    this.addToBuffer('heatmap', event.data);
                 } else {
                     this.addToBuffer('replay', event);
                 }
             },
-            // Aggressively throttle mousemove events
             sampling: {
-                mousemove: 150, // ms
-                scroll: 1000, // ms
+                mousemove: 150,
+                scroll: 1000,
             },
-            // Mask all inputs by default for privacy
             maskAllInputs: true,
         });
     }
@@ -137,36 +172,24 @@ class InsightCoreSDK {
             events: this.eventBuffer,
         };
 
-        // Clear buffer immediately
         this.eventBuffer = [];
 
         const data = JSON.stringify(payload);
+        const url = this.config.collectorUrl;
 
-        if (useBeacon) {
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon(this.config.collectorUrl, data);
-            } else {
-                // Fallback for browsers that don't support sendBeacon
-                fetch(this.config.collectorUrl, {
-                    method: 'POST',
-                    body: data,
-                    headers: { 'Content-Type': 'application/json' },
-                    keepalive: true,
-                });
-            }
+        if (useBeacon && navigator.sendBeacon) {
+            navigator.sendBeacon(url, data);
         } else {
-            fetch(this.config.collectorUrl, {
+            fetch(url, {
                 method: 'POST',
                 body: data,
                 headers: { 'Content-Type': 'application/json' },
+                keepalive: useBeacon,
             }).catch(error => {
                 console.error("InsightCore SDK: Error sending data:", error);
-                // If sending fails, add events back to the buffer (optional, can lead to large buffers)
-                // this.eventBuffer.unshift(...payload.events);
             });
         }
     }
 }
 
-// Automatically instantiate and initialize
 new InsightCoreSDK();
